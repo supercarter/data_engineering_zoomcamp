@@ -1,1 +1,2 @@
-# data_engineering_zoomcamp
+# DE Zoomcamp
+This is the code for the homeworks
