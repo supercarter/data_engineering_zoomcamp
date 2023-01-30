@@ -2,10 +2,12 @@
 from sqlalchemy import create_engine
 import pandas as pd
 from prefect import flow, task
+from prefect_gcp.cloud_storage import GcsBucket
 
 
 @task
 def read_data() -> pd.DataFrame:
+    """"Read the CSV to a dataframe. Change this later to download csv from github"""
     color = 'green'
     year = 2019
     month = '01'
@@ -14,14 +16,22 @@ def read_data() -> pd.DataFrame:
 
 @task
 def clean_data(data: pd.DataFrame) -> pd.DataFrame:
+    """Simple cleaning. Remove any records where passenger_count is 0"""
     data = data[data['passenger_count'] != 0]
     return data
 
 @task
-def ingest_to_pg(data: pd.DataFrame, port: str, dbname: str) -> None:
+def upload_to_gcs(data: pd.DataFrame, port: str, dbname: str) -> None:
+    """Move the cleaned data to google cloud storage bucket."""
+    # Create a storage client
+    storage_client = storage.Client()
+    # Get bucket from client
+    bucket = storage_client.bucket("green_taxi_csvs")
+    # Upload
+    blob = bucket.blob("green_taxi")
+    blob.upload_from_file()
     connection_string = f"postgresql://root:root@localhost:{port}/{dbname}"
     engine = create_engine(connection_string)
-    connection = engine.connect()
     data.head(n=0).to_sql(name='green_taxi_data_gh', con=engine, if_exists='replace')
     data.to_sql(name='green_taxi_data_gh',con=engine,if_exists='append')
 
